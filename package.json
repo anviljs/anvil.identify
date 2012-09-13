@@ -1,0 +1,23 @@
+{
+  "author": "Alex Robson <alex@sharplearningcurve.com> (http://sharplearningcurve.com)",
+  "name": "anvil.identify",
+  "description": "An anvil core plugin that identifies files for the build",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/arobson/anvil.identify.git"
+  },
+  "engines": {
+    "node": "~0.8.3"
+  },
+  "main": "./lib/identify.js",
+  "dependencies": {
+    "machina": "0.2.0"
+  },
+  "devDependencies": { 
+    "anvil.js": ">=0.8.5",
+    "should": "~1.1"
+  },
+  "optionalDependencies": {},
+  "keywords": [ "anvil", "core" ]
+}
