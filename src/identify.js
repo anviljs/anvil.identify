@@ -13,8 +13,6 @@ module.exports = function( _, anvil ) {
 		config: {
 			continuous: false,
 			watchPaths: [
-				anvil.config.source,
-				anvil.config.spec
 			],
 			ignore: [
 				"/.*[.]sw.?/",
@@ -36,17 +34,19 @@ module.exports = function( _, anvil ) {
 		callback: function() {},
 
 		configure: function( config, command, done ) {
-			var pluginConfig = config[ this.name ],
+			var pluginConfig = anvil.config[ this.name ],
 				ignore = pluginConfig ? pluginConfig.ignore : [];
-			anvil.config[ this.name ].ignore = _.map( ignore, function( filter ) {
+			pluginConfig.ignore = _.map( ignore, function( filter ) {
 				if( !_.isRegExp( filter ) ) {
 					return anvil.utility.parseRegex( filter );
 				} else {
 					return filter;
 				}
 			} );
+			pluginConfig.watchPaths = pluginConfig.watchPaths.concat(
+				[ anvil.config.source, anvil.config.spec ] );
 			if( command.ci ) {
-				anvil.config[ this.name ].continuous = true;
+				pluginConfig.continuous = true;
 			}
 			done();
 		},
