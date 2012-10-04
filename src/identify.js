@@ -132,11 +132,11 @@ module.exports = function( _, anvil ) {
 				},
 				"file.change": function( file, path ) {
 					anvil.log.event( "file change in '" + file + "'" );
-					anvil.events.raise( "file.changed", "change", file, path );
+					anvil.raise( "file.changed", "change", file, path );
 				},
 				"file.deleted": function( file, path ) {
 					anvil.log.event( "file deleted: '" + file + "'" );
-					anvil.events.raise( "file.deleted", "deleted", file, path );
+					anvil.raise( "file.deleted", "deleted", file, path );
 				}
 			}
 		}
