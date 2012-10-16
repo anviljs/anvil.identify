@@ -1,4 +1,5 @@
-var machina = require( "machina" );
+var machina = require( "machina" ),
+	path = require( "path" );
 
 module.exports = function( _, anvil ) {
 	
@@ -44,7 +45,7 @@ module.exports = function( _, anvil ) {
 				}
 			} );
 			pluginConfig.watchPaths = pluginConfig.watchPaths.concat(
-				[ anvil.config.source, anvil.config.spec ] );
+				[ anvil.config.source, anvil.config.spec, anvil.config.external ] );
 			if( command.ci ) {
 				pluginConfig.continuous = true;
 			}
@@ -68,6 +69,30 @@ module.exports = function( _, anvil ) {
 				anvil.log.event( "found " + files.length + " spec files" );
 				done();
 			}, anvil.config[ this.name ].ignore );
+		},
+
+		loadExt: function( done ) {
+			var external = anvil.config.external,
+				extDir = path.basename( external ),
+				exists = anvil.fs.pathExists( external );
+			if( !exists ) {
+				done();
+			} else {
+				anvil.fs.getFiles( external, anvil.config.working, function( files, directories ) {
+					anvil.log.step( "Scanning external dependencies: " + external );
+					var metadata = _.map( files, function( file ) {
+							var base = file.originalPath.replace( anvil.config.external, "" ),
+								baseDir = path.dirname( base ),
+								relative = anvil.fs.buildPath( extDir, baseDir ),
+								working = anvil.fs.buildPath( anvil.config.working, extDir, baseDir );
+							file.relativePath = relative;
+							return file;
+						} );
+					metadata = _.uniq( metadata, false, function( x ) { return x.fullPath; } );
+					anvil.project.dependencies = metadata;
+					done();
+				}, [], 0 );
+			}
 		},
 
 		run: function( done ) {
@@ -116,8 +141,10 @@ module.exports = function( _, anvil ) {
 					var self = this;
 					this.excluded.push( anvil.config.output );
 					this.loadSource( function() {
-						self.loadSpecs( function() {
-							self.transition( "watching" );
+						self.loadExt( function() {
+							self.loadSpecs( function() {
+								self.transition( "watching" );
+							} );
 						} );
 					} );
 				}
