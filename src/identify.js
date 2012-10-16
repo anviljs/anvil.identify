@@ -91,7 +91,7 @@ module.exports = function( _, anvil ) {
 					metadata = _.uniq( metadata, false, function( x ) { return x.fullPath; } );
 					anvil.project.dependencies = metadata;
 					done();
-				}, [], 0 );
+				}, anvil.config[ this.name ].ignore );
 			}
 		},
 
