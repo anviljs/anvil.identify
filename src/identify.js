@@ -102,22 +102,22 @@ module.exports = function( _, anvil ) {
 
 		watchAll: function() {
 			var self = this;
-			_.each( anvil.config[ this.name ].watchPaths, function( target ) {
-				self.watch( target );
-			} );
+			_.each( anvil.config[ this.name ].watchPaths, self.watch );
 		},
 
 		watch: function( path ) {
 			var self = this;
-			this.watchers.push(
-				anvil.fs.watch( path, function( event ) {
-					if( !event.isDelete() ) {
-						self.handle( "file.change", event.name, path );
-					} else {
-						self.handle( "file.deleted", event.name, path );
-					}
-				} )
-			);
+			if( anvil.fs.pathExists( path ) ) {
+				this.watchers.push(
+					anvil.fs.watch( path, function( event ) {
+						if( !event.isDelete() ) {
+							self.handle( "file.change", event.name, path );
+						} else {
+							self.handle( "file.deleted", event.name, path );
+						}
+					} )
+				);
+			}
 		},
 
 		unwatchAll: function() {
