@@ -15,6 +15,7 @@ module.exports = function( _, anvil ) {
 			continuous: false,
 			watchPaths: [
 			],
+			specs: [ "/.*[.]js$/" ],
 			ignore: [
 				"/.*[.]sw.?/",
 				"/.*[~]$/",
@@ -35,7 +36,7 @@ module.exports = function( _, anvil ) {
 		callback: function() {},
 
 		configure: function( config, command, done ) {
-			var pluginConfig = anvil.config[ this.name ],
+			var pluginConfig = this.config,
 				ignore = pluginConfig ? pluginConfig.ignore : [];
 			pluginConfig.ignore = _.map( ignore, function( filter ) {
 				if( !_.isRegExp( filter ) ) {
@@ -63,7 +64,14 @@ module.exports = function( _, anvil ) {
 		},
 
 		loadSpecs: function( done ) {
+			var self = this;
 			anvil.fs.getFiles( anvil.config.spec, anvil.config.working, function( files, directories ) {
+				files = _.filter( files, function( file ) {
+					return _.any( self.config.specs, function( pattern ) {
+						pattern = anvil.utility.parseRegex( pattern );
+						return file.originalPath.match( pattern );
+					} );
+				} );
 				anvil.project.specs = files;
 				anvil.project.directories = anvil.project.directories.concat( directories );
 				anvil.log.event( "found " + files.length + " spec files" );
