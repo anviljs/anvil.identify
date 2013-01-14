@@ -15,11 +15,12 @@ module.exports = function( _, anvil ) {
 			continuous: false,
 			watchPaths: [
 			],
-			specs: [ "/.*[.]js$/" ],
+			specs: [ "**/*.js" ],
 			ignore: [
-				"/.*[.]sw.?/",
-				"/.*[~]$/",
-				"/#.*#$/"
+				"**/*.sw*",
+				"**/*~/",
+				"**/#*#",
+				"**/.DS_Store"
 			]
 		},
 		watchers: [],
@@ -38,19 +39,18 @@ module.exports = function( _, anvil ) {
 		configure: function( config, command, done ) {
 			var pluginConfig = this.config,
 				ignore = pluginConfig ? pluginConfig.ignore : [];
-			pluginConfig.ignore = _.map( ignore, function( filter ) {
-				if( !_.isRegExp( filter ) ) {
-					return anvil.utility.parseRegex( filter );
-				} else {
-					return filter;
-				}
-			} );
 			pluginConfig.watchPaths = pluginConfig.watchPaths.concat(
 				[ anvil.config.source, anvil.config.spec, anvil.config.external ] );
 			if( command.ci ) {
 				pluginConfig.continuous = true;
 			}
 			done();
+		},
+
+		isIgnored: function( file ) {
+			return _.any( this.config.ignore, function( pattern ) {
+				return anvil.minimatch( file, pattern, { dot: true, matchBase: true } );
+			} );
 		},
 
 		loadSource: function( done ) {
@@ -66,10 +66,9 @@ module.exports = function( _, anvil ) {
 		loadSpecs: function( done ) {
 			var self = this;
 			anvil.fs.getFiles( anvil.config.spec, anvil.config.working, function( files, directories ) {
-				files = _.filter( files, function( file ) {
+				var files = _.filter( files, function( file ) {
 					return _.any( self.config.specs, function( pattern ) {
-						pattern = anvil.utility.parseRegex( pattern );
-						return file.originalPath.match( pattern );
+						return anvil.minimatch( file.originalPath, pattern );
 					} );
 				} );
 				anvil.project.specs = files;
@@ -118,10 +117,15 @@ module.exports = function( _, anvil ) {
 			if( anvil.fs.pathExists( path ) ) {
 				this.watchers.push(
 					anvil.fs.watch( path, function( event ) {
-						if( !event.isDelete() ) {
-							self.handle( "file.change", event.name, path );
+						if( self.isIgnored( event.name ) ) {
+							anvil.log.debug( "Ignored file changed: " + event.name );
 						} else {
-							self.handle( "file.deleted", event.name, path );
+							if( !event.isDelete() ) {
+								anvil.emit( "file.change", { file: event.name } );
+								self.handle( "file.change", event.name, path );
+							} else {
+								self.handle( "file.deleted", event.name, path );
+							}
 						}
 					} )
 				);
@@ -167,11 +171,21 @@ module.exports = function( _, anvil ) {
 				},
 				"file.change": function( file, path ) {
 					anvil.log.event( "file change in '" + file + "'" );
-					anvil.raise( "file.changed", "change", file, path );
+					anvil.emit( "file.changed",
+						{
+							change: "change",
+							path: file,
+							base: path
+						} );
 				},
 				"file.deleted": function( file, path ) {
 					anvil.log.event( "file deleted: '" + file + "'" );
-					anvil.raise( "file.deleted", "deleted", file, path );
+					anvil.emit( "file.deleted",
+						{
+							change: "deleted",
+							path: file,
+							base: path
+						} );
 				}
 			}
 		}
