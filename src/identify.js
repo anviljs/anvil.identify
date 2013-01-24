@@ -191,5 +191,13 @@ module.exports = function( _, anvil ) {
 		}
 	};
 	
-	return anvil.plugin( new machina.Fsm( loader ) );
+	var plugin = anvil.plugin( new machina.Fsm( loader ) );
+	anvil.addWatchPath = function( spec ) {
+		var handle = anvil.extensions.plugins[ "anvil.identify" ];
+		spec = anvil.fs.buildPath( spec );
+		if( handle ) {
+			handle.config.watchPaths.push( spec );
+		}
+	};
+	return plugin;
 };
