@@ -23,7 +23,6 @@ module.exports = function( _, anvil ) {
 				"**/.DS_Store"
 			]
 		},
-		watchers: [],
 		initialState: "waiting",
 
 		buildDone: function() {
@@ -38,12 +37,22 @@ module.exports = function( _, anvil ) {
 
 		configure: function( config, command, done ) {
 			var pluginConfig = this.config,
-				ignore = pluginConfig ? pluginConfig.ignore : [];
+				ignore = pluginConfig ? pluginConfig.ignore : [],
+				self = this;
 			pluginConfig.watchPaths = pluginConfig.watchPaths.concat(
 				[ anvil.config.source, anvil.config.spec, anvil.config.external ] );
 			if( command.ci ) {
 				pluginConfig.continuous = true;
 			}
+
+			anvil.fs.on( "file.#", function( event, envelope ) {
+				if( self.isIgnored( event.name ) ) {
+					anvil.log.debug( "Ignored file changed: " + event.name );
+				} else {
+					self.handle( envelope.topic, event.name, event.path );
+				}
+			} );
+
 			done();
 		},
 
@@ -115,27 +124,12 @@ module.exports = function( _, anvil ) {
 		watch: function( path ) {
 			var self = this;
 			if( anvil.fs.pathExists( path ) ) {
-				this.watchers.push(
-					anvil.fs.watch( path, function( event ) {
-						if( self.isIgnored( event.name ) ) {
-							anvil.log.debug( "Ignored file changed: " + event.name );
-						} else {
-							if( !event.isDelete() ) {
-								anvil.emit( "file.change", { file: event.name } );
-								self.handle( "file.change", event.name, path );
-							} else {
-								self.handle( "file.deleted", event.name, path );
-							}
-						}
-					} )
-				);
+				anvil.fs.watch( path );
 			}
 		},
 
 		unwatchAll: function() {
-			while( this.watchers.length > 0 ) {
-				this.watchers.pop().end();
-			}
+			
 		},
 
 		states: {
